@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Refresh Prioritization — Muhammad Umar | Search Intelligence Capstone</title>
+<meta name="description" content="Using search performance signals — clicks, impressions, CTR, average position — to rank webpages for content refresh review.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F8FAFC;
+    --surface:#FFFFFF;
+    --ink:#172033;
+    --ink-soft:#64748B;
+    --ink-faint:#94A3B8;
+    --hairline:#E2E8F0;
+    --header:#0B1220;
+    --primary:#2563EB;
+    --primary-bg:#E8EFFD;
+    --accent:#06B6D4;
+    --accent-bg:#E0F7FB;
+    --success:#10B981;
+    --success-bg:#E3F9F0;
+    --warning:#F59E0B;
+    --warning-bg:#FEF3DE;
+    --tag-mid-bg:#EEF2F8;
+    --tag-light-bg:#F1F5F9;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:'Inter',sans-serif;line-height:1.62;-webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--primary-bg);color:var(--ink);}
+  a{color:var(--primary);}
+  a.link{text-decoration-color:#93B4F0;text-decoration-color:color-mix(in srgb, var(--primary) 40%, transparent);text-underline-offset:3px;}
+  a.link:hover{text-decoration-color:var(--primary);}
+
+  h1,h2,h3{font-family:'Newsreader',serif;font-weight:600;letter-spacing:-0.01em;margin:0;}
+  .mono{font-family:'Space Mono',monospace;}
+
+  .wrap{max-width:880px;margin:0 auto;padding:0 28px;}
+
+  .topbar{
+    border-bottom:1px solid var(--hairline);background:rgba(247,247,245,0.92);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);position:sticky;top:0;z-index:10;
+  }
+  .topbar .wrap{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;}
+  .topbar .lane{font-family:'Space Mono',monospace;font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);}
+  .topbar .lane b{color:var(--ink);}
+  .topbar nav{display:flex;gap:20px;font-size:12.5px;font-family:'Space Mono',monospace;}
+  .topbar nav a{color:var(--ink-soft);text-decoration:none;}
+  .topbar nav a:hover{color:var(--ink);}
+  @media (max-width:640px){.topbar nav{display:none;}}
+
+  /* position badge — signature element, echoes SERP ranking */
+  .pos-badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:50%;
+    font-family:'Space Mono',monospace;font-weight:700;font-size:13px;
+    background:var(--primary);color:#FFFFFF;flex:none;
+  }
+  .pos-badge.alt{background:var(--accent);}
+  .pos-badge.warn{background:var(--warning);}
+
+  .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.04em;
+    text-transform:uppercase;padding:4px 10px;border-radius:100px;
+  }
+  .tag.directional{background:var(--warning-bg);color:#966002;}
+  .tag.decision{background:var(--tag-mid-bg);color:var(--ink-soft);}
+  .tag.observed{background:var(--success-bg);color:#0A7A5C;}
+
+  /* ---------- dark full-bleed hero band ---------- */
+  .hero-band{
+    position:relative;overflow:hidden;
+    background:
+      radial-gradient(620px 340px at 12% -15%, rgba(37,99,235,0.35), transparent 60%),
+      radial-gradient(560px 320px at 90% 0%, rgba(6,182,212,0.28), transparent 60%),
+      var(--header);
+    color:#F8FAFC;
+    padding:76px 28px 68px;text-align:center;
+  }
+  .hero-band::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size:26px 26px;-webkit-mask-image:linear-gradient(to bottom, black, transparent 75%);mask-image:linear-gradient(to bottom, black, transparent 75%);
+  }
+  .hero-inner{max-width:760px;margin:0 auto;position:relative;}
+  .hero-band .eyebrow{
+    font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;
+    color:#8FA0C7;margin-bottom:22px;
+  }
+  .hero-band h1{
+    font-size:clamp(34px,5.4vw,54px);line-height:1.06;color:#F8FAFC;
+  }
+  .hero-band .dek{
+    font-size:17.5px;color:#B7C2DA;max-width:56ch;margin:20px auto 0;
+  }
+
+  .rank-accent{
+    display:flex;justify-content:center;gap:6px;margin:30px 0 26px;
+  }
+  .rank-accent span{width:38px;height:4px;border-radius:2px;}
+  .rank-accent span:nth-child(1){background:var(--primary);}
+  .rank-accent span:nth-child(2){background:var(--accent);}
+  .rank-accent span:nth-child(3){background:var(--success);}
+
+  .byline{
+    margin-top:6px;font-family:'Space Mono',monospace;font-size:13px;color:#8592AD;
+    display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  }
+  .byline b{
+    color:var(--paper);font-size:15px;letter-spacing:0.01em;
+  }
+  .byline .dot{width:4px;height:4px;border-radius:50%;background:#3D4A66;}
+
+  .hero{padding:44px 0 0;}
+
+  .abstract{margin-top:32px;background:var(--surface);border:1px solid var(--hairline);border-radius:4px;padding:26px 28px;}
+  .abstract .label{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+  .abstract p{margin:0;font-size:15.5px;}
+
+  /* hero visual: illustrative ranked queue */
+  .queue{margin-top:32px;background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:22px 24px;}
+  .queue .label{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:16px;}
+  .qrow{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--hairline);}
+  .qrow:last-child{border-bottom:none;}
+  .qrow .name{font-size:14.5px;color:var(--ink);}
+  .qrow .name .sub{display:block;font-family:'Space Mono',monospace;font-size:11.5px;color:var(--ink-faint);margin-top:2px;}
+  .qrow .tag{white-space:nowrap;}
+  .queue .foot{margin-top:14px;font-size:12.5px;color:var(--ink-faint);}
+
+  section{padding:52px 0;border-top:1px solid var(--hairline);}
+  section:first-of-type{border-top:none;}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+  .sec-tag{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.06em;color:var(--ink-faint);}
+  .sec-head h2{font-size:26px;}
+  section p{color:var(--ink-soft);font-size:15.5px;max-width:70ch;}
+  section p.lead{color:var(--ink);font-size:16.5px;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;}
+  @media (max-width:680px){.grid-2{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:4px;padding:20px 22px;}
+  .card h3{font-size:14.5px;font-family:'Inter',sans-serif;font-weight:600;margin-bottom:8px;}
+  .card p{margin:0;font-size:14.5px;}
+
+  .stat-strip{display:flex;margin:24px 0 6px;border:1px solid var(--hairline);border-radius:4px;overflow:hidden;background:var(--surface);}
+  .stat{flex:1;padding:16px 18px;border-right:1px solid var(--hairline);}
+  .stat:last-child{border-right:none;}
+  .stat .n{font-family:'Newsreader',serif;font-size:20px;font-weight:600;}
+  .stat .l{font-family:'Space Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-faint);margin-top:4px;}
+  @media (max-width:680px){.stat-strip{flex-wrap:wrap;}.stat{flex:1 1 50%;border-bottom:1px solid var(--hairline);}}
+
+  .excl-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .excl-list span{font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);background:var(--tag-light-bg);padding:5px 10px;border-radius:4px;}
+
+  table.results{width:100%;border-collapse:collapse;margin-top:22px;font-size:14.5px;}
+  table.results th{text-align:left;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-faint);padding:0 14px 10px;border-bottom:1px solid var(--hairline);font-weight:700;}
+  table.results td{padding:14px 14px;border-bottom:1px solid var(--hairline);color:var(--ink);}
+  table.results tr:last-child td{border-bottom:none;}
+
+  .cbar{margin-top:26px;background:var(--surface);border:1px solid var(--hairline);border-radius:4px;padding:22px 24px 18px;}
+  .cbar .title{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-faint);margin-bottom:16px;}
+  .crow{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;margin-bottom:12px;}
+  .crow:last-child{margin-bottom:0;}
+  .crow .clabel{font-family:'Space Mono',monospace;font-size:12.5px;color:var(--ink-soft);}
+  .ctrack{height:14px;border-radius:3px;background:var(--tag-light-bg);overflow:hidden;display:flex;}
+  .cfill.impression{background:var(--primary);}
+  .cfill.click{background:var(--accent);}
+
+  ul.findings{list-style:none;margin:22px 0 0;padding:0;}
+  ul.findings li{display:grid;grid-template-columns:34px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--hairline);align-items:start;}
+  ul.findings li:last-child{border-bottom:none;}
+  ul.findings li p{margin:0;color:var(--ink);font-size:15px;}
+
+  ol.rank{list-style:none;margin:22px 0 0;padding:0;counter-reset:rank;}
+  ol.rank li{counter-increment:rank;display:grid;grid-template-columns:40px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--hairline);}
+  ol.rank li:last-child{border-bottom:none;}
+  ol.rank li::before{content:counter(rank);font-family:'Newsreader',serif;font-size:19px;font-weight:600;color:var(--ink-faint);}
+  ol.rank li p{margin:0;color:var(--ink);font-size:15px;}
+
+  ul.limits{list-style:none;margin:22px 0 0;padding:0;}
+  ul.limits li{display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:start;padding:13px 0;border-bottom:1px solid var(--hairline);}
+  ul.limits li:last-child{border-bottom:none;}
+  ul.limits li p{margin:0;color:var(--ink-soft);font-size:14.5px;}
+  @media (max-width:640px){ul.limits li{grid-template-columns:1fr;}}
+
+  .repro-box{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;background:var(--surface);border:1px solid var(--hairline);border-radius:4px;padding:18px 20px;margin-top:14px;}
+  .repro-box .l{font-family:'Space Mono',monospace;font-size:13.5px;}
+  .repro-box .l .path{color:var(--primary);font-weight:600;}
+  .repro-box .r{font-size:13px;color:var(--ink-faint);}
+  .nb-list{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
+  .nb-list div{font-family:'Space Mono',monospace;font-size:13px;color:var(--ink-soft);padding:6px 0;border-bottom:1px solid var(--hairline);}
+  @media (max-width:640px){.nb-list{grid-template-columns:1fr;}}
+
+  footer{padding:44px 0 60px;border-top:1px solid var(--hairline);}
+  footer p{font-size:14px;color:var(--ink-soft);max-width:60ch;}
+  footer .credit{margin-top:14px;font-family:'Space Mono',monospace;font-size:12.5px;color:var(--ink-faint);}
+  footer .credit.spaced{margin-top:8px;}
+
+  /* utility classes — replace one-off inline styles */
+  .loose{line-height:1.9;}
+  .mt-26{margin-top:26px;}
+  .mt-30{margin-top:30px;}
+  .ink-strong{color:var(--ink);}
+  .cfill.w-full{width:100%;}
+  .cfill.w-14{width:14%;}
+  .fine-note{font-size:13px;color:var(--ink-faint);margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="hero-band">
+  <div class="hero-inner">
+    <div class="eyebrow">Search Intelligence Capstone Research Paper</div>
+    <h1>Content Refresh Prioritization</h1>
+    <p class="dek">Can clicks, impressions, CTR, and average position tell a content team which pages to look at first? A rule-based baseline and a decision tree were framed and evaluated on the same split — this paper reports what's confirmed so far, and what's still pending.</p>
+    <div class="rank-accent"><span></span><span></span><span></span></div>
+    <div class="byline">FlyRank Machine Learning Internship <span class="dot"></span> <b>Muhammad Umar</b></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="lane">Search Intelligence · <b>Content Refresh Prioritization</b></div>
+    <nav>
+      <a href="#data">Data</a>
+      <a href="#method">Method</a>
+      <a href="#results">Findings</a>
+      <a href="#limits">Limits</a>
+      <a href="#recs">Playbook</a>
+      <a href="#repro">Repro</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ================= HERO (abstract + queue) ================= -->
+  <section class="hero">
+    <div class="abstract">
+      <div class="label">Abstract</div>
+      <p>
+        Can search performance metrics — clicks, impressions, CTR, and average position — be used to identify which webpages should be prioritized for content refresh? This project frames the question as a ranking task: page-month records from March 2026 are scored by a rule-based baseline and, in parallel, by a decision tree trained on the same four signals, with both approaches held to an identical 80/20 evaluation split. Label-derived and future-looking fields were excluded during a leakage review before any model was trained, so the comparison reflects signals a team would actually have in hand at review time. The clearest pattern so far is directional rather than final: pages combining high impressions with low CTR repeatedly surface as refresh candidates, while average position adds ranking context on top of that signal. These findings are decision-support evidence for a human reviewer, not a validated accuracy comparison — that comparison is the next step once client-holdout evaluation is complete.
+      </p>
+    </div>
+
+    <div class="queue">
+      <div class="label">Illustrative scoring output — synthetic examples, not real pages</div>
+      <div class="qrow">
+        <span class="pos-badge warn">1</span>
+        <div class="name">Page A <span class="sub">high impressions · CTR well below category median</span></div>
+        <span class="tag directional">Refresh candidate</span>
+      </div>
+      <div class="qrow">
+        <span class="pos-badge warn">2</span>
+        <div class="name">Page B <span class="sub">declining clicks over trailing window</span></div>
+        <span class="tag directional">Refresh candidate</span>
+      </div>
+      <div class="qrow">
+        <span class="pos-badge alt">3</span>
+        <div class="name">Page C <span class="sub">average position improving, CTR stable</span></div>
+        <span class="tag observed">Monitor</span>
+      </div>
+      <div class="qrow">
+        <span class="pos-badge">4</span>
+        <div class="name">Page D <span class="sub">performance within expected range</span></div>
+        <span class="tag decision">No action</span>
+      </div>
+      <div class="foot">Reason codes shown here are illustrative of the scoring logic — no real page identifiers appear anywhere in this paper.</div>
+    </div>
+  </section>
+
+  <!-- ================= INTRO ================= -->
+  <section id="intro">
+    <div class="sec-head"><span class="sec-tag mono">01</span><h2>Problem statement</h2></div>
+    <p class="lead">Content teams managing large page inventories can't manually re-audit every URL every month. Some pages are quietly losing visibility, some are ranking well but not converting clicks, and most are simply fine — without a structured way to triage, review time goes wherever someone happens to look, not where it's actually needed.</p>
+    <p>This project asks whether four signals a search team already has — clicks, impressions, CTR, and average position — are enough to rank pages by refresh priority. The decision it supports: which pages get a human content review this cycle, and on what basis.</p>
+  </section>
+
+  <!-- ================= DATA ================= -->
+  <section id="data">
+    <div class="sec-head"><span class="sec-tag mono">02</span><h2>Data</h2></div>
+    <p class="lead">FlyRank ML Internship dataset, one release, restricted to a single month window for this pass.</p>
+
+    <div class="stat-strip">
+      <div class="stat"><div class="n">March 2026</div><div class="l">Time window</div></div>
+      <div class="stat"><div class="n">1 page · 1 month</div><div class="l">Unit of analysis</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">Core features</div></div>
+      <div class="stat"><div class="n">80 / 20</div><div class="l">Train / test split</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Features</h3>
+        <p class="mono loose">clicks · impressions · ctr · avg_position</p>
+      </div>
+      <div class="card">
+        <h3>Scope note</h3>
+        <p>Single-month window keeps the first pass simple. A time-aware, multi-month window is the natural next step once this baseline comparison is validated.</p>
+      </div>
+    </div>
+
+    <p class="mt-26"><strong class="ink-strong">Public-safe by construction.</strong> The following are excluded from this paper, the notebooks, and the repo — no exceptions:</p>
+    <div class="excl-list">
+      <span>Client names</span>
+      <span>Domains</span>
+      <span>Raw URLs</span>
+      <span>Private search queries</span>
+      <span>Credentials</span>
+      <span>Raw exports</span>
+    </div>
+  </section>
+
+  <!-- ================= METHOD ================= -->
+  <section id="method">
+    <div class="sec-head"><span class="sec-tag mono">03</span><h2>Methodology</h2></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Workflow</h3>
+        <p>Problem framing → data analysis → feature and leakage checks → baseline construction → model training → validation → action recommendations, in that order.</p>
+      </div>
+      <div class="card">
+        <h3>Model choice</h3>
+        <p>A decision tree was chosen for interpretability — it exposes which of the four signals actually drives a flag, rather than acting as a black box.</p>
+      </div>
+      <div class="card">
+        <h3>Baseline</h3>
+        <p>A rule-based prioritization built directly from the search/content performance signals, applied with no fitting, evaluated on the same split as the model.</p>
+      </div>
+      <div class="card">
+        <h3>Leakage check</h3>
+        <p>Label-derived and future-looking fields were identified and excluded before training, so the comparison reflects only information available at review time.</p>
+      </div>
+    </div>
+
+    <table class="results mt-30">
+      <tr><th>Approach</th><th>Method</th><th>Evaluation</th></tr>
+      <tr><td>Baseline</td><td>Rule-based prioritization from search/content performance signals</td><td>Same split as model</td></tr>
+      <tr><td>Decision tree</td><td>ML-based prioritization on the same four features</td><td>80% training / 20% testing</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section id="results">
+    <div class="sec-head">
+      <span class="sec-tag mono">04</span><h2>Key findings</h2>
+      <span class="tag directional">Directional</span>
+    </div>
+    <p class="lead">No final baseline-vs-model accuracy number yet — that depends on client-holdout evaluation, which is the next step, not a completed one. What's below is pattern-level, not a validated comparison.</p>
+
+    <div class="cbar">
+      <div class="title">CTR relative to impressions — the core refresh signal</div>
+      <div class="crow">
+        <div class="clabel">Impressions</div>
+        <div class="ctrack"><div class="cfill impression w-full"></div></div>
+      </div>
+      <div class="crow">
+        <div class="clabel">Clicks (≈ CTR)</div>
+        <div class="ctrack"><div class="cfill click w-14"></div></div>
+      </div>
+    </div>
+    <p class="fine-note">Illustrative ratio, not a measured aggregate — stand-in for the pattern described below until real per-split numbers are computed.</p>
+
+    <ul class="findings">
+      <li><span class="pos-badge warn">!</span><p>Pages with high impressions but low CTR repeatedly surface as content optimization opportunities — visibility without engagement is the strongest recurring pattern.</p></li>
+      <li><span class="pos-badge alt">i</span><p>Average position adds ranking context on top of the impressions/CTR signal, rather than acting as an independent driver.</p></li>
+      <li><span class="pos-badge">✓</span><p>Search performance signals alone appear sufficient to support a structured refresh triage — a heavier data pipeline is not obviously required for this task.</p></li>
+    </ul>
+  </section>
+
+  <!-- ================= LIMITATIONS ================= -->
+  <section id="limits">
+    <div class="sec-head"><span class="sec-tag mono">05</span><h2>Limitations &amp; honest framing</h2></div>
+    <p class="lead">Every claim above is decision-support evidence, not a validated result. Specifically:</p>
+
+    <ul class="limits">
+      <li><span class="tag decision">Decision-support</span><p>The model does not guarantee improved rankings — it flags candidates for review, nothing more.</p></li>
+      <li><span class="tag decision">Decision-support</span><p>The model does not predict or model Google's search algorithm; no causal refresh-impact claim is made anywhere in this project.</p></li>
+      <li><span class="tag directional">Directional</span><p>Results depend on the available dataset and a single month's window — they may not generalize to other periods without re-validation.</p></li>
+      <li><span class="tag directional">Directional</span><p>Additional content-quality signals (beyond clicks, impressions, CTR, and position) could meaningfully improve future versions of this work.</p></li>
+      <li><span class="tag decision">Decision-support</span><p>The project was evaluated on internship-provided data, not production data — treat every number as a demo-scale signal, not an operating benchmark.</p></li>
+    </ul>
+  </section>
+
+  <!-- ================= RECOMMENDATIONS ================= -->
+  <section id="recs">
+    <div class="sec-head"><span class="sec-tag mono">06</span><h2>Ranked recommendations</h2></div>
+    <p class="lead">In the order a content team should apply them:</p>
+    <ol class="rank">
+      <li><p>Refresh pages with high impressions but low CTR first — this is the strongest recurring pattern in the data.</p></li>
+      <li><p>Update outdated content that shows declining performance over the trailing window.</p></li>
+      <li><p>Improve titles and meta descriptions on flagged pages to increase click opportunity without a full content rewrite.</p></li>
+      <li><p>Review keyword alignment and user intent for pages that rank well but convert few clicks.</p></li>
+      <li><p>Monitor performance monthly and retrain the approach as new data becomes available — a human reviews every flag before action is taken.</p></li>
+    </ol>
+  </section>
+
+  <!-- ================= REPRODUCIBILITY ================= -->
+  <section id="repro">
+    <div class="sec-head"><span class="sec-tag mono">07</span><h2>Reproducibility</h2></div>
+    <p class="lead">Project notebooks and this capstone report live in the GitHub repository below, in sequence from research question through action playbook.</p>
+
+    <div class="repro-box">
+      <div class="l">GitHub repository</div>
+      <div class="r"><a class="link" href="https://github.com/umarali8/flyrank-ml-internship" target="_blank" rel="noopener">github.com/umarali8/flyrank-ml-internship</a></div>
+    </div>
+    <div class="repro-box">
+      <div class="l">Deployed paper URL — <span class="path">/submission/paper_url.txt</span></div>
+      <div class="r">One line, this page's address</div>
+    </div>
+
+    <div class="nb-list">
+      <div>research_question.ipynb</div>
+      <div>task_framing.ipynb</div>
+      <div>data_contract.ipynb</div>
+      <div>baseline.ipynb</div>
+      <div>model.ipynb</div>
+      <div>validation.ipynb</div>
+      <div>action_playbook.ipynb</div>
+      <div>capstone.ipynb</div>
+    </div>
+  </section>
+
+  <footer>
+    <p>This research project was completed as part of the FlyRank Machine Learning Internship. Special thanks to the FlyRank team for providing the educational dataset and internship program. No client names, domains, URLs, private queries, credentials, raw exports, or causal claims about search engine behavior appear anywhere in this paper, the notebooks, or the repo.</p>
+    <p class="credit">Data source: <a class="link" href="https://flyrank.ai" target="_blank" rel="noopener">flyrank.ai</a> — built on the FlyRank ML Internship dataset.</p>
+    <p class="credit spaced">FlyRank ML Capstone · Content Refresh Prioritization · Muhammad Umar · 2026</p>
+  </footer>
+
+</div>
+</body>
+</html>
