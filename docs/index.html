@@ -7,7 +7,7 @@
 <meta name="description" content="Using search performance signals — clicks, impressions, CTR, average position — to rank webpages for content refresh review.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700" rel="stylesheet">
 <style>
   :root{
     --paper:#F8FAFC;
@@ -160,7 +160,7 @@
   .excl-list span{font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);background:var(--tag-light-bg);padding:5px 10px;border-radius:4px;}
 
   table.results{width:100%;border-collapse:collapse;margin-top:22px;font-size:14.5px;}
-  table.results th{text-align:left;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-faint);padding:0 14px 10px;border-bottom:1px solid var(--hairline);font-weight:700;}
+  table.results th{text-align:left;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-faint);padding:0 14px 10px;border-bottom:1px solid var(--hairline);}
   table.results td{padding:14px 14px;border-bottom:1px solid var(--hairline);color:var(--ink);}
   table.results tr:last-child td{border-bottom:none;}
 
@@ -190,7 +190,7 @@
   ul.limits li p{margin:0;color:var(--ink-soft);font-size:14.5px;}
   @media (max-width:640px){ul.limits li{grid-template-columns:1fr;}}
 
-  .repro-box{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;background:var(--surface);border:1px solid var(--hairline);border-radius:4px;padding:18px 20px;margin-top:14px;}
+  .repro-box{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;background:var(--surface);border:1px solid var(--hairline);border-radius:4px;padding:18px 20px;margin-top:16px;}
   .repro-box .l{font-family:'Space Mono',monospace;font-size:13.5px;}
   .repro-box .l .path{color:var(--primary);font-weight:600;}
   .repro-box .r{font-size:13px;color:var(--ink-faint);}
@@ -219,7 +219,7 @@
   <div class="hero-inner">
     <div class="eyebrow">Search Intelligence Capstone Research Paper</div>
     <h1>Content Refresh Prioritization</h1>
-    <p class="dek">Can clicks, impressions, CTR, and average position tell a content team which pages to look at first? A rule-based baseline and a decision tree were framed and evaluated on the same split — this paper reports what's confirmed so far, and what's still pending.</p>
+    <p class="dek">Can clicks, impressions, CTR, and average position tell a content team which pages to look at first? A rule-based baseline and a decision tree were framed and evaluated on the anonymized FlyRank dataset.</p>
     <div class="rank-accent"><span></span><span></span><span></span></div>
     <div class="byline">FlyRank Machine Learning Internship <span class="dot"></span> <b>Muhammad Umar</b></div>
   </div>
@@ -246,7 +246,7 @@
     <div class="abstract">
       <div class="label">Abstract</div>
       <p>
-        Can search performance metrics — clicks, impressions, CTR, and average position — be used to identify which webpages should be prioritized for content refresh? This project frames the question as a ranking task: page-month records from March 2026 are scored by a rule-based baseline and, in parallel, by a decision tree trained on the same four signals, with both approaches held to an identical 80/20 evaluation split. Label-derived and future-looking fields were excluded during a leakage review before any model was trained, so the comparison reflects signals a team would actually have in hand at review time. The clearest pattern so far is directional rather than final: pages combining high impressions with low CTR repeatedly surface as refresh candidates, while average position adds ranking context on top of that signal. These findings are decision-support evidence for a human reviewer, not a validated accuracy comparison — that comparison is the next step once client-holdout evaluation is complete.
+        Can search performance metrics — clicks, impressions, CTR, and average position — be used to identify which webpages should be prioritized for content refresh? This project frames the problem as a supervised classification task: given a page's search performance in a time window, predict whether it should be flagged for content review. A decision tree and a rule-based baseline are compared on the anonymized FlyRank dataset.
       </p>
     </div>
 
@@ -279,8 +279,8 @@
   <!-- ================= INTRO ================= -->
   <section id="intro">
     <div class="sec-head"><span class="sec-tag mono">01</span><h2>Problem statement</h2></div>
-    <p class="lead">Content teams managing large page inventories can't manually re-audit every URL every month. Some pages are quietly losing visibility, some are ranking well but not converting clicks, and most are simply fine — without a structured way to triage, review time goes wherever someone happens to look, not where it's actually needed.</p>
-    <p>This project asks whether four signals a search team already has — clicks, impressions, CTR, and average position — are enough to rank pages by refresh priority. The decision it supports: which pages get a human content review this cycle, and on what basis.</p>
+    <p class="lead">Content teams managing large page inventories can't manually re-audit every URL every month. Some pages are quietly losing visibility, some are ranking well but not converting. This creates a triage problem.</p>
+    <p>This project asks whether four signals a search team already has — clicks, impressions, CTR, and average position — are enough to rank pages by refresh priority. The decision it supports is: should a content editor review this page now, or later?</p>
   </section>
 
   <!-- ================= DATA ================= -->
@@ -353,7 +353,7 @@
       <span class="sec-tag mono">04</span><h2>Key findings</h2>
       <span class="tag directional">Directional</span>
     </div>
-    <p class="lead">No final baseline-vs-model accuracy number yet — that depends on client-holdout evaluation, which is the next step, not a completed one. What's below is pattern-level, not a validated comparison.</p>
+    <p class="lead">No final baseline-vs-model accuracy number yet — that depends on client-holdout evaluation, which is the next step, not a completed one. What's below is pattern-level, not an aggregate score.</p>
 
     <div class="cbar">
       <div class="title">CTR relative to impressions — the core refresh signal</div>
@@ -371,7 +371,7 @@
     <ul class="findings">
       <li><span class="pos-badge warn">!</span><p>Pages with high impressions but low CTR repeatedly surface as content optimization opportunities — visibility without engagement is the strongest recurring pattern.</p></li>
       <li><span class="pos-badge alt">i</span><p>Average position adds ranking context on top of the impressions/CTR signal, rather than acting as an independent driver.</p></li>
-      <li><span class="pos-badge">✓</span><p>Search performance signals alone appear sufficient to support a structured refresh triage — a heavier data pipeline is not obviously required for this task.</p></li>
+      <li><span class="pos-badge">✓</span><p>Search performance signals alone appear sufficient to support a structured refresh triage — a heavier data pipeline is not obviously required for proof-of-concept.</p></li>
     </ul>
   </section>
 
@@ -383,9 +383,9 @@
     <ul class="limits">
       <li><span class="tag decision">Decision-support</span><p>The model does not guarantee improved rankings — it flags candidates for review, nothing more.</p></li>
       <li><span class="tag decision">Decision-support</span><p>The model does not predict or model Google's search algorithm; no causal refresh-impact claim is made anywhere in this project.</p></li>
-      <li><span class="tag directional">Directional</span><p>Results depend on the available dataset and a single month's window — they may not generalize to other periods without re-validation.</p></li>
-      <li><span class="tag directional">Directional</span><p>Additional content-quality signals (beyond clicks, impressions, CTR, and position) could meaningfully improve future versions of this work.</p></li>
-      <li><span class="tag decision">Decision-support</span><p>The project was evaluated on internship-provided data, not production data — treat every number as a demo-scale signal, not an operating benchmark.</p></li>
+      <li><span class="tag directional">Directional</span><p>Results depend on the available dataset and a single month's window — they may not generalize to other periods without re-validation by a content strategist.</p></li>
+      <li><span class="tag directional">Directional</span><p>Additional content-quality signals (beyond clicks, impressions, CTR, and position) could meaningfully improve future versions of this model.</p></li>
+      <li><span class="tag decision">Decision-support</span><p>The project was evaluated on internship-provided data, not production data — treat every number as a demo-scale signal, not an operational guarantee.</p></li>
     </ul>
   </section>
 
@@ -428,12 +428,14 @@
     </div>
   </section>
 
-  <footer>
-    <p>This research project was completed as part of the FlyRank Machine Learning Internship. Special thanks to the FlyRank team for providing the educational dataset and internship program. No client names, domains, URLs, private queries, credentials, raw exports, or causal claims about search engine behavior appear anywhere in this paper, the notebooks, or the repo.</p>
-     <p>## Acknowledgments & Data Credit
+  <!-- ================= ACKNOWLEDGMENTS ================= -->
+  <section id="acknowledgments">
+    <div class="sec-head"><span class="sec-tag mono">08</span><h2>Acknowledgments &amp; Data Credit</h2></div>
+    <p>This project uses data provided by <a class="link" href="https://flyrank.ai" target="_blank" rel="noopener">FlyRank</a>. Special thanks to the FlyRank team for providing the educational dataset and internship program. This capstone research was completed as part of the FlyRank Machine Learning Internship.</p>
+  </section>
 
-    This project uses data provided by [FlyRank](https://flyrank.ai).</p>
-    <p class="credit spaced">FlyRank ML Capstone · Content Refresh Prioritization · Muhammad Umar · 2026</p>
+  <footer>
+    <p class="credit">FlyRank ML Capstone · Content Refresh Prioritization · Muhammad Umar · 2026</p>
   </footer>
 
 </div>
