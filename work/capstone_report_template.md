@@ -1,10 +1,10 @@
 Capstone Report
 Author: Muhammad Umar
 Lane: Refresh / Content Opportunity Scoring
-Repo: https://github.com/umarali8/flyrank-ml-internship
+Repo: https\://github.com/umarali8/flyrank-ml-internship
 Date: August 2026
 
-
+*Note: as of this draft, the notebook this report is based on (**`Capstone_Refresh_Content_Scoring.ipynb`**) runs on a labeled synthetic demo dataset, not the real FlyRank warehouse — the real Hugging Face query hasn't been run yet. Every section below reflects that honestly. Sections marked [PENDING] need to be filled in once the real data is loaded and client-holdout evaluation is complete — do not fill them with estimated numbers.*
 
 ## 1. Problem framing
 
@@ -29,6 +29,7 @@ Features used: content age, days since last update, 90-day impressions, average 
 Excluded data: client names, domains, raw URLs, private search queries, credentials, and raw exports.
 
 Leakage checks:
+
 - A feature called `trend_pct` was tested and dropped — it was directly derived from the outcome being predicted, so keeping it would have let the model "see the answer" instead of predicting it honestly.
 - No future-window or label-derived fields were used as features.
 - The synthetic client IDs used for the holdout split are used only for grouping, never as a predictive feature.
@@ -57,7 +58,7 @@ On the synthetic demo run: 913 training rows / 287 test rows, 12 training client
 
 Results on the synthetic run: baseline accuracy 1.000, Decision Tree accuracy 0.9965, both measured on the same held-out clients. **This result is not meaningful as a real finding** — the synthetic label was built from the same rule as the baseline, so the baseline was always going to score close to perfect on it. [PENDING: real accuracy comparison once the real warehouse data and an independently-defined label are used.]
 
-Feature importance (Decision Tree, synthetic run): CTR dominated (0.943), followed by content age (0.057); the remaining four features had ~0 importance in this run. [PENDING: re-check on real data — this ranking may not hold once the label isn't derived from the baseline rule.]
+Feature importance (Decision Tree, synthetic run): CTR dominated (0.943), followed by content age (0.057); the remaining four features had \~0 importance in this run. [PENDING: re-check on real data — this ranking may not hold once the label isn't derived from the baseline rule.]
 
 ## 6. Interpretation
 
@@ -70,6 +71,7 @@ Results here are directional and decision-support only — they do not prove cau
 ## 7. Recommendation
 
 Recommended actions:
+
 - Use the ranked list and reason codes to decide what a human reviews first — not as an automatic action queue.
 - Do not treat the Decision Tree's ranking as more trustworthy than the baseline until it has been validated on real data with an independently-defined label.
 - When a page is flagged, have a reviewer check the actual page before acting — the reason code is a starting point, not a verdict.
@@ -80,17 +82,18 @@ Confidence and limitations: no page has been refreshed and evaluated based on th
 
 ## 8. Reproducibility
 
-Repository: https://github.com/umarali8/flyrank-ml-internship
+Repository: https\://github.com/umarali8/flyrank-ml-internship
 
 Project notebooks (per assignment spec, place under `work/`):
-- w01_research_question.ipynb
-- w02_ml_task_framing.ipynb
-- w03_data_contract.ipynb
-- w03_feature_leakage_check.ipynb
-- w04_baseline_score.ipynb
-- w05_decision_tree_model.ipynb
-- w06_validation_audit.ipynb
-- w07_recommendations.ipynb
+
+- w01\_research\_question.ipynb
+- w02\_ml\_task\_framing.ipynb
+- w03\_data\_contract.ipynb
+- w03\_feature\_leakage\_check.ipynb
+- w04\_baseline\_score.ipynb
+- w05\_decision\_tree\_model.ipynb
+- w06\_validation\_audit.ipynb
+- w07\_recommendations.ipynb
 - capstone.ipynb (built from `Capstone_Refresh_Content_Scoring.ipynb`)
 
 Environment: Python via Google Colab. Main libraries: pandas, scikit-learn, matplotlib. Fixed random seed (42) used throughout for reproducibility.
