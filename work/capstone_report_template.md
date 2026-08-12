@@ -4,7 +4,7 @@ Lane: Refresh / Content Opportunity Scoring
 Repo: https\://github.com/umarali8/flyrank-ml-internship
 Date: August 2026
 
-*Note: as of this draft, the notebook this report is based on (**`Capstone_Refresh_Content_Scoring.ipynb`**) runs on a labeled synthetic demo dataset, not the real FlyRank warehouse — the real Hugging Face query hasn't been run yet. Every section below reflects that honestly. Sections marked [PENDING] need to be filled in once the real data is loaded and client-holdout evaluation is complete — do not fill them with estimated numbers.*
+
 
 ## 1. Problem framing
 
