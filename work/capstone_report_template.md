@@ -88,6 +88,7 @@ Project notebooks (per assignment spec, place under `work/`):
 - `w01_research_question.ipynb`
 - `w02_ml_task_framing.ipynb`
 - `w03_data_contract.ipynb`
+- `w03_feature_leakage_check.ipynb`
 - `w04_baseline_score.ipynb`
 - `w05_decision_tree_model.ipynb`
 - `w06_validation_audit.ipynb`
