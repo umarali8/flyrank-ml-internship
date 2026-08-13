@@ -1,9 +1,14 @@
-Author: Muhammad Umar
-Lane: Search Intelligence Capstone — Refresh / Content Opportunity Scoring
-Repo: [https://github.com/umarali8/flyrank-ml-internshipp](https://github.com/umarali8/flyrank-ml-internshipp)
-Data source: [FlyRank ML Internship dataset](https://flyrank.ai/)
-Date: August 2026
+# Capstone Report
 
+**Author:**  Muhammad Umar
+
+**Lane:** Search Intelligence Capstone — Refresh / Content Opportunity Scoring
+
+**Repository:** [https://github.com/umarali8/flyrank-ml-internshipp](https://github.com/umarali8/flyrank-ml-internshipp)
+
+**Data source:** [FlyRank ML Internship dataset](https://flyrank.ai/)
+
+**Date:** August 2026
 ---
 
 ## 1. Problem framing
