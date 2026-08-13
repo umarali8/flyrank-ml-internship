@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@[...]
 <style>
   :root{
     --paper:#F8FAFC;
@@ -161,7 +161,7 @@
   .excl-list span{font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);background:var(--tag-light-bg);padding:5px 10px;border-radius:4px;}
 
   table.results{width:100%;border-collapse:collapse;margin-top:22px;font-size:14.5px;}
-  table.results th{text-align:left;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-faint);padding:0 14px 10px;border-bottom:1px solid var(--hairline);font-weight:700;}
+  table.results th{text-align:left;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-faint);padding:0 14px 10px;border-bottom:1px solid var(--hairline);}
   table.results td{padding:14px 14px;border-bottom:1px solid var(--hairline);color:var(--ink);}
   table.results tr:last-child td{border-bottom:none;}
 
@@ -232,7 +232,7 @@
   <div class="hero-inner">
     <div class="eyebrow">Search Intelligence Capstone Research Paper</div>
     <h1>Content Refresh Prioritization</h1>
-    <p class="dek">Does a Decision Tree beat a simple search-performance rule at flagging pages for content refresh? Both were trained and evaluated on the same client-holdout split — 30,000 pages across 32 anonymized clients — so this paper reports a finished comparison, the feature importance behind it, and what it means for a content team.</p>
+    <p class="dek">Does a Decision Tree beat a simple search-performance rule at flagging pages for content refresh? Both were trained and evaluated on the same client-holdout split — 30,000 pages, 7 held-out clients.</p>
     <div class="rank-accent"><span></span><span></span><span></span></div>
     <div class="byline">FlyRank Machine Learning Internship <span class="dot"></span> <b>Muhammad Umar</b></div>
   </div>
@@ -259,7 +259,7 @@
     <div class="abstract">
       <div class="label">Abstract</div>
       <p>
-        Can search-performance and content signals a team already has be used to decide which webpages to prioritize for content refresh? This project frames the task as a binary decline classifier (<code>is_declining</code>) backed by a ranked score, using a public-safe, anonymized release of the FlyRank ML Internship dataset — 30,000 page records across 32 clients. A simple search-performance rule was compared against a Decision Tree Classifier (<code>max_depth=4</code>) trained on 15 features spanning search demand, content length, 90-day traffic, and engagement. Both approaches were evaluated on an identical client-holdout split, so no client appears in both training and testing, and a leakage review removed outcome-derived fields — including <code>trend_pct</code> and several derived flag columns — before any model was trained. On this split, the baseline rule slightly outperformed the Decision Tree (87.93% vs. 87.17% accuracy), and the tree's decisions were dominated by a single signal, <code>impressions_90d</code>, at nearly 82% of feature importance, with <code>scroll_rate</code>, <code>clicks_90d</code>, and <code>content_age_days</code> contributing secondary signal. The results are reported as decision-support evidence for a human reviewer, not a validated prediction of search outcomes.
+        Can search-performance and content signals a team already has be used to decide which webpages to prioritize for content refresh? This project frames the task as a binary decline classifier that ranks pages by content-refresh priority. Both a Decision Tree Classifier and a simple baseline rule were trained and evaluated on a client-holdout split with zero overlap — 23,837 pages across 25 clients for training, 6,163 pages across 7 held-out clients for testing.
       </p>
     </div>
 
@@ -292,8 +292,8 @@
   <!-- ================= INTRO ================= -->
   <section id="intro">
     <div class="sec-head"><span class="sec-tag mono">01</span><h2>Problem statement</h2></div>
-    <p class="lead">Content teams managing large page inventories can't manually re-audit every URL. Some pages are quietly losing visibility, some are ranking well but not converting clicks, and most are simply fine — without a structured way to triage, review time goes wherever someone happens to look, not where it's actually needed.</p>
-    <p>This project supports the decision of prioritizing webpages that may benefit from a content refresh. The unit of analysis is one webpage belonging to one anonymized client; the output is a binary decline flag (<code>is_declining</code>) plus a ranked list backed by a decision tree score. A content team reviews the ranked/flagged pages and decides what to check first, instead of manually reviewing hundreds of pages one by one — across the 30,000 rows and 32 clients in this dataset, that manual review isn't practical.</p>
+    <p class="lead">Content teams managing large page inventories can't manually re-audit every URL. Some pages are quietly losing visibility, some are ranking well but not converting clicks, and identifying refresh candidates at scale is hard. This capstone builds a binary classifier to surface candidates for human review.</p>
+    <p>This project supports the decision of prioritizing webpages that may benefit from a content refresh. The unit of analysis is one webpage belonging to one anonymized client; the output is a decision-support score, not a guarantee of ranking improvement.</p>
   </section>
 
   <!-- ================= DATA ================= -->
@@ -311,7 +311,7 @@
     <div class="grid-2">
       <div class="card">
         <h3>Features (15)</h3>
-        <p class="mono loose">search_volume · competition · cpc · word_count · char_count · impressions_90d · clicks_90d · pageviews_90d · sessions_90d · content_age_days · days_since_last_update · ctr · avg_position · engagement_rate · scroll_rate</p>
+        <p class="mono loose">search_volume · competition · cpc · word_count · char_count · impressions_90d · clicks_90d · pageviews_90d · sessions_90d · content_age_days · days_since_last_refresh · scroll_rate · ctr_90d · category_median_scroll · is_declining</p>
       </div>
       <div class="card">
         <h3>Target balance</h3>
@@ -341,7 +341,7 @@
       </div>
       <div class="card">
         <h3>Model choice</h3>
-        <p>A Decision Tree Classifier (<code>max_depth=4</code>, <code>random_state=42</code>) was chosen for interpretability — it exposes which of the 15 signals actually drives a decline flag, rather than acting as a black box.</p>
+        <p>A Decision Tree Classifier (<code>max_depth=4</code>, <code>random_state=42</code>) was chosen for interpretability — it exposes which of the 15 signals actually drives a decline flag.</p>
       </div>
       <div class="card">
         <h3>Baseline</h3>
@@ -349,7 +349,7 @@
       </div>
       <div class="card">
         <h3>Leakage check</h3>
-        <p>Outcome-derived fields — <code>trend_pct</code>, <code>health_score</code>, <code>ai_opportunity</code>, <code>is_underperformer</code>, <code>is_initial_refresh_candidate</code>, <code>is_quick_win</code>, <code>needs_ctr_fix</code>, <code>needs_engagement_fix</code> — were identified and excluded before training. <code>client_id</code> was used only for the holdout grouping, never as a feature.</p>
+        <p>Outcome-derived fields — <code>trend_pct</code>, <code>health_score</code>, <code>ai_opportunity</code>, <code>is_underperformer</code>, <code>is_initial_refresh_candidate</code>, <code>is_quick_win</code> — were excluded from the feature set to prevent leakage.</p>
       </div>
     </div>
 
@@ -367,7 +367,7 @@
       <span class="sec-tag mono">04</span><h2>Key findings</h2>
       <span class="tag observed">Client-holdout, measured</span>
     </div>
-    <p class="lead">On the client-holdout split, the baseline slightly outperformed the Decision Tree — 87.93% vs. 87.17% accuracy. The tree's own decisions turned out to be dominated by a single signal.</p>
+    <p class="lead">On the client-holdout split, the baseline slightly outperformed the Decision Tree — 87.93% vs. 87.17% accuracy. The tree's own decisions turned out to be dominated by a single feature: impressions in the last 90 days.</p>
 
     <div class="cbar">
       <div class="title">Decision tree feature importance — client-holdout split</div>
@@ -399,9 +399,9 @@
     <p class="fine-note">impressions_90d 81.97% · scroll_rate 6.55% · clicks_90d 5.78% · content_age_days 5.27% · char_count 0.32% · competition 0.12% · all remaining features ≈ 0.00%.</p>
 
     <ul class="findings">
-      <li><span class="pos-badge warn">!</span><p><code>impressions_90d</code> dominates the model's decisions at nearly 82% importance — visibility volume is the strongest available signal for flagging decline, which also makes the model brittle for pages with mixed or unusual performance patterns.</p></li>
-      <li><span class="pos-badge alt">i</span><p><code>scroll_rate</code>, <code>clicks_90d</code>, and <code>content_age_days</code> provide secondary signal. Many candidate features — search volume, word count, CPC, CTR, average position, engagement rate, days since last update — carried effectively zero importance in this model.</p></li>
-      <li><span class="pos-badge">✓</span><p>On this held-out split, the Decision Tree did not beat the simple baseline rule (87.17% vs. 87.93%) — a simple rule using the top few signals may be just as effective as the tree.</p></li>
+      <li><span class="pos-badge warn">!</span><p><code>impressions_90d</code> dominates the model's decisions at nearly 82% importance — visibility volume is the strongest available signal for identifying pages worth a refresh review.</p></li>
+      <li><span class="pos-badge alt">i</span><p><code>scroll_rate</code>, <code>clicks_90d</code>, and <code>content_age_days</code> provide secondary signal. Many candidate features — search volume, CPC, word count — did not contribute materially.</p></li>
+      <li><span class="pos-badge">✓</span><p>On this held-out split, the Decision Tree did not beat the simple baseline rule (87.17% vs. 87.93%) — a simple rule using the top few signals may suffice for production screening.</p></li>
     </ul>
   </section>
 
@@ -411,11 +411,11 @@
     <p class="lead">Every claim above is decision-support evidence, not a validated result. Specifically:</p>
 
     <ul class="limits">
-      <li><span class="tag decision">Decision-support</span><p>The model does not guarantee improved rankings — it flags candidates for review, nothing more — and on this evaluation it did not outperform a simple baseline rule (87.17% vs. 87.93%).</p></li>
+      <li><span class="tag decision">Decision-support</span><p>The model does not guarantee improved rankings — it flags candidates for review, nothing more — and on this evaluation it did not outperform a simple baseline.</p></li>
       <li><span class="tag decision">Decision-support</span><p>The model does not predict or model a search engine's ranking algorithm; no causal refresh-impact claim is made anywhere in this project.</p></li>
-      <li><span class="tag directional">Directional</span><p>The model relies heavily on one signal (<code>impressions_90d</code>, ~82% of importance), which may make it brittle for pages with mixed or unusual performance patterns.</p></li>
-      <li><span class="tag directional">Directional</span><p>The model mainly depends on available search-performance features rather than deeper content-quality signals — many candidate features carried effectively zero importance.</p></li>
-      <li><span class="tag decision">Decision-support</span><p>The project was evaluated on the FlyRank ML Internship Starter dataset, not production data — treat every number as a demo-scale signal, not an operating benchmark.</p></li>
+      <li><span class="tag directional">Directional</span><p>The model relies heavily on one signal (<code>impressions_90d</code>, ~82% of importance), which may make it brittle for pages with minor visibility losses.</p></li>
+      <li><span class="tag directional">Directional</span><p>The model mainly depends on available search-performance features rather than deeper content-quality signals — many candidate features did not materialize into useful predictors.</p></li>
+      <li><span class="tag decision">Decision-support</span><p>The project was evaluated on the FlyRank ML Internship Starter dataset, not production data — treat every number as a demo-scale snapshot.</p></li>
     </ul>
   </section>
 
@@ -439,7 +439,7 @@
 
     <div class="repro-box">
       <div class="l">GitHub repository</div>
-      <div class="r"><a class="link" href="https://github.com/umarali8/flyrank-ml-internshipp" target="_blank" rel="noopener">github.com/umarali8/flyrank-ml-internshipp</a></div>
+      <div class="r"><a class="link" href="https://github.com/umarali8/flyrank-ml-internship" target="_blank" rel="noopener">github.com/umarali8/flyrank-ml-internship</a></div>
     </div>
     <div class="repro-box">
       <div class="l">Deployed paper URL — <span class="path">/submission/paper_url.txt</span></div>
@@ -464,10 +464,10 @@
   </section>
 
   <footer>
-    <p>This research project was completed as part of the FlyRank Machine Learning Internship. Special thanks to the FlyRank team for providing the educational dataset and internship program. No client names, domains, URLs, private queries, credentials, raw exports, or causal claims about search engine behavior appear anywhere in this paper, the notebooks, or the repo.</p>
+    <p>This research project was completed as part of the FlyRank Machine Learning Internship. Special thanks to the FlyRank team for providing the educational dataset and internship program. No confidential client data was disclosed.</p>
     <p class="credit">Data source: <a class="link" href="https://flyrank.ai" target="_blank" rel="noopener">flyrank.ai</a> — built on the FlyRank ML Internship dataset.</p>
     <p class="credit spaced">FlyRank ML Capstone · Content Refresh Prioritization · Muhammad Umar · 2026</p>
-    <p class="credit spaced">Built during the FlyRank AI Fluency Internship. </p>
+    <p class="credit spaced">Built during the FlyRank AI Fluency Internship.</p>
   </footer>
 
 </div>
