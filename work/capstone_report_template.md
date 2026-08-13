@@ -1,114 +1,158 @@
-# Capstone Report
-
-**Author:** Muhammad Umar  
-**Lane:** Search Intelligence Capstone — Refresh / Content Opportunity Scoring  
-**Repo:** https://github.com/umarali8/flyrank-ml-internshipp  
-**Data source:** [FlyRank ML Internship dataset](https://flyrank.ai)
-**Date:** August 2026
-
-# Refresh or Review: Scoring Which Pages Need Attention First
-
-## Abstract
-
-Can page-level content and search-performance signals be combined into a single score that tells a content team which pages to review first, instead of checking hundreds of pages by hand? A shallow decision tree trained on six page-level signals — content age, days since update, 90-day impressions, average position, CTR, and word count — was benchmarked against a rule-based baseline under client-holdout validation, where entire client groups, not just rows, were withheld from training. On a synthetic demo run built to mirror the real pipeline's structure, the baseline scored **100.00%** accuracy and the tree scored **99.65%** on held-out clients, with CTR alone driving 94.3% of the tree's decisions. Because the demo label was defined by the same rule as the baseline, the honest reading is that the tree learned to reproduce the rule rather than beat it — a distinction the real warehouse run will need to settle independently. The deliverable is a ranked, reason-coded review queue for a human-in-the-loop workflow, not an autonomous action engine.
+Author: Muhammad Umar
+Lane: Search Intelligence Capstone — Refresh / Content Opportunity Scoring
+Repo: [https://github.com/umarali8/flyrank-ml-internshipp](https://github.com/umarali8/flyrank-ml-internshipp)
+Data source: [FlyRank ML Internship dataset](https://flyrank.ai/)
+Date: August 2026
 
 ---
 
-## 1. Question / Decision Supported
+## 1. Problem framing
 
-**Research question:** Can page-level content and search-performance signals be used to score which pages should be prioritized for content refresh?
+This project supports the decision of prioritizing webpages that may benefit from content refresh.
 
-**Decision supported:** The output helps an SEO/content team decide which pages to review first, instead of manually checking hundreds of pages one by one.
+**Unit of analysis:** One webpage (content item) belonging to one anonymized client.
 
----
+**Output:** A binary decline flag (`is_declining`) and a ranked list of pages, backed by a decision tree score.
 
-## 2. Data
+**Human action:** SEO/content teams can review the ranked/flagged pages and decide which pages should be reviewed first, instead of manually checking hundreds of pages one by one.
 
-The real FlyRank warehouse lives on Hugging Face behind gated, read-token access and isn't reachable from this environment. This project runs on a **synthetic demo dataset**, generated to carry the same six features, the same reason-code logic, and the same validation structure as the real pipeline — the method is real even though this run's numbers are not.
+**Cost of a wrong call:** Time may be wasted reviewing pages that do not need changes, or pages that genuinely need a refresh may be missed.
 
-| | |
-|---|---|
-| Synthetic rows | 1,200 |
-| Synthetic client groups | 15 |
-| Features | 6 |
-| Label | 1 (binary) |
+Machine learning helps because a large number of pages (30,000 rows across 32 clients in this dataset) cannot be manually reviewed efficiently. The model helps identify patterns in content and search-performance signals and supports faster, more consistent triage decisions.
 
-**Features:** `content_age_days`, `days_since_update`, `impressions_90d`, `avg_position`, `ctr`, `word_count`
+## 2. Data safety
 
-**Label — `needs_review`:** flagged when a page is either `STALE_CONTENT` (older than 365 days, CTR under 2%) or `LOW_CTR` (CTR under 1.5%, not already stale).
+The project used the **FlyRank ML Internship Starter dataset** (public-safe, anonymized release) — 30,000 rows, 53 columns, 32 anonymized clients.
 
-**Excluded from this project — no exceptions:** client names, domains, raw URLs, private search queries, credentials, raw exports.
+**Used features:**
 
----
+- Search volume, competition, CPC
+- Word count, character count
+- Impressions (90d), clicks (90d), pageviews (90d), sessions (90d)
+- Content age (days), days since last update
+- CTR, average position
+- Engagement rate, scroll rate
 
-## 3. Methodology
+**Excluded data:**
 
-**Assumptions**
-- Recent search-performance signals are a reasonable proxy for whether a page needs attention.
-- Age and update recency interact with performance rather than acting independently.
-- A page's reason code (why it was flagged) matters as much as the flag itself.
+- Client names
+- Domains / raw URLs
+- Private search queries
+- Credentials
+- Raw exports
 
-**Baseline:** Rule-based, no fitting. Pages older than 365 days with CTR under 2% are tagged `STALE_CONTENT`. Pages with CTR under 1.5% not already caught by that rule are tagged `LOW_CTR`.
+**Leakage checks:**
 
-**Validation design:** Client-holdout split (`GroupShuffleSplit`), not a random row split — entire client groups are withheld from training so accuracy reflects generalization to accounts the model has never seen. Stronger and more honest than shuffling rows.
+- Outcome-derived fields were not used as model features.
+- `is_underperformer`, `is_initial_refresh_candidate`, `is_quick_win`, `needs_ctr_fix`, `needs_engagement_fix`, `health_score`, and `ai_opportunity` were excluded as leakage.
+- `trend_pct` was specifically caught and removed — it is derived from the outcome and would have inflated results if left in as a feature.
+- `client_id` was only used for grouping in the holdout split, not as a predictive feature.
+- No client-identifying information was included in the work folder.
 
-| Train rows | Test rows | Train clients | Held-out clients | Client overlap |
-|---|---|---|---|---|
-| 913 | 287 | 12 | 3 | `false` |
+## 3. Baseline
 
-**Leakage check:** A candidate feature, `trend_pct`, was tested and dropped — it was derived directly from the outcome being predicted, which would have let the model see the answer rather than predict it. No leaking feature is in the final set.
+The baseline was a simple search-performance rule used as the point of comparison for the machine-learning model.
 
----
+For fair evaluation, the baseline and the Decision Tree model were compared using the **same client-holdout split** — no client appeared in both training and testing.
 
-## 4. Results (vs. Baseline)
+**Baseline result:** 0.8793 accuracy on held-out clients.
 
-Model and baseline were scored on the identical held-out-client split. Computed live from the synthetic run, not typed in.
+The baseline acts as a reference point to measure whether the ML approach provides a more structured prioritization method than a simple rule.
 
-| Approach | Accuracy (held-out clients) | Validation |
+## 4. Model / analysis
+
+The project used a **Decision Tree Classifier** (`max_depth=4`, `random_state=42`) for the content refresh prioritization lane.
+
+The Decision Tree method was selected because it provides an interpretable ML approach that can identify patterns between content/search-performance signals and page decline.
+
+**Target definition:** `is_declining` (binary) — 24,437 negative cases, 5,563 positive cases. This target is a proxy used to rank/flag pages for refresh review, not a guarantee of future outcomes.
+
+**Features used (15):** `search_volume`, `competition`, `cpc`, `word_count`, `char_count`, `impressions_90d`, `clicks_90d`, `pageviews_90d`, `sessions_90d`, `content_age_days`, `days_since_last_update`, `ctr`, `avg_position`, `engagement_rate`, `scroll_rate`.
+
+**Features deliberately excluded:** `trend_pct`, `health_score`, `ai_opportunity`, `is_underperformer`, `is_initial_refresh_candidate`, `is_quick_win`, `needs_ctr_fix`, `needs_engagement_fix`, `client_id`.
+
+The model was designed to support content prioritization decisions, not to predict search engine algorithms or guarantee ranking improvements.
+
+## 5. Evaluation
+
+The model was evaluated using **client-holdout validation**: entire clients were kept in either training or testing, with no client overlap.
+
+**Evaluation approach:**
+
+- Training rows: 23,837 (25 clients)
+- Test rows: 6,163 (7 clients)
+- Client overlap: 0 → **PASS**, no client leakage.
+- Same split used for both the baseline and the Decision Tree model, for a fair comparison.
+
+**Results:**
+
+| Approach | Accuracy | Validation |
 |---|---|---|
-| Baseline (rule-based) | **1.0000** | Client-holdout |
-| Decision tree (depth 4) | **0.9965** | Client-holdout, same split as baseline |
+| Baseline | 0.8793 | Client-holdout |
+| Decision Tree | 0.8717 | Client-holdout |
 
-**Feature importance (decision tree):**
+The baseline slightly outperformed the Decision Tree on this held-out split.
+
+**Feature importance (Decision Tree):**
 
 | Feature | Importance |
 |---|---|
-| `ctr` | 0.943 |
-| `content_age_days` | 0.057 |
-| `days_since_update` | 0.000 |
-| `impressions_90d` | 0.000 |
-| `avg_position` | 0.000 |
-| `word_count` | 0.000 |
+| impressions_90d | 81.97% |
+| scroll_rate | 6.55% |
+| clicks_90d | 5.78% |
+| content_age_days | 5.27% |
+| char_count | 0.32% |
+| competition | 0.12% |
+| all remaining features | 0.00% |
 
-Higher accuracy on this run: **baseline**. The tree's near-total reliance on CTR is expected, not impressive — the label itself is a direct function of CTR and content age, so the tree mostly rediscovered the baseline's own threshold. This is a demo result on synthetic data; re-run on the real warehouse before treating any number as a finding.
+**Error analysis:**
 
----
+- The model relies heavily on one signal (`impressions_90d`), which may make it brittle for pages with mixed or unusual performance patterns.
+- It mainly depends on available search-performance features rather than deeper content-quality signals.
+- Results should be interpreted as decision-support evidence rather than a precise prediction of outcomes.
 
-## 5. Limitations
+## 6. Interpretation
 
-- This run uses synthetic demo data, not the real FlyRank warehouse — swap in the real query before treating any number above as a finding.
-- `needs_review` is a proxy label built from the same rule as the baseline here; on real data, define this label independently so the model isn't just learning to reproduce the baseline's own rule.
-- No page has actually been refreshed and evaluated based on these recommendations — there is no measured business impact yet.
-- Reason codes describe a pattern, not a guaranteed cause.
-- Results should be read as decision-support evidence, not a claim about search engine behavior.
+The model identified patterns in search-performance signals that can help prioritize pages for content refresh, though it did not beat the simple baseline on this evaluation.
 
----
+**Key observations:**
 
-## 6. Ranked Recommendations
+- `impressions_90d` dominates the model's decisions, suggesting visibility volume is the strongest available signal for flagging decline.
+- `scroll_rate`, `clicks_90d`, and `content_age_days` provide secondary signal.
+- Many candidate features (search volume, word count, CPC, CTR, average position, engagement rate, days since last update) carried effectively zero importance in this model — a simple rule using the top few signals may be just as effective as the tree.
 
-1. Use the ranked list and reason codes to decide what a human reviews first, not as an automatic action queue.
-2. Do not trust the decision tree's ranking over the baseline until it's been validated on the real warehouse with a real, independently-defined label.
-3. When a page is flagged, have a reviewer check it before acting — the reason code is a starting point, not a verdict.
-4. Re-run the leakage check on any new feature added later.
-5. Retrain and re-validate periodically as new data comes in.
+**Feature interpretation:**
 
----
+- Impressions show search visibility, and their strong weight suggests decline is closely tied to visibility loss.
+- Scroll rate and clicks reflect user engagement with the page.
+- Content age provides context on how long the page has existed without change.
 
-## 7. Reproducibility
+The results are directional and should be used as decision-support evidence. The model does not prove causation and does not predict search engine ranking algorithms.
 
-**GitHub repository:** https://github.com/umaralii/flyrank-ml-internship
+## 7. Recommendation
 
-**Project notebooks (run in sequence):**
+The model output supports ranked content-refresh decisions for content teams, alongside the baseline it was benchmarked against.
+
+**Recommended actions:**
+
+- Use the model ranking to decide which pages a human reviewer should check first.
+- Compare the model ranking with the baseline before making content decisions, since the baseline currently performs at least as well.
+- Review the signals behind each flagged page (especially `impressions_90d` and `scroll_rate`) before recommending a refresh.
+- Check every new feature for data leakage before adding it to the model.
+- Retrain and re-validate the model when new search-performance data becomes available.
+
+**How a content team can use it:** An editor can review the ranked pages, check which signals drove the flag, and decide which updates are worth applying.
+
+**Confidence and limitations:** The recommendations provide directional decision-support based on observed search signals. Human review is required before making content changes. The model does not guarantee improved rankings or traffic, and on this dataset it did not outperform a simple rule-based baseline.
+
+## 8. Reproducibility
+
+The project can be reproduced by following the notebooks in sequence from the GitHub repository.
+
+**Repository:** https://github.com/umarali8/flyrank-ml-internshipp
+
+**Project notebooks:**
+
 - `w01_research_question.ipynb`
 - `w02_ml_task_framing.ipynb`
 - `w03_data_contract.ipynb`
@@ -119,32 +163,22 @@ Higher accuracy on this run: **baseline**. The tree's near-total reliance on CTR
 - `w07_recommendations.ipynb`
 - `capstone.ipynb`
 
----
+**Environment:**
 
-## Acknowledgments & Data Credit
+- Python environment used through Google Colab.
+- Main libraries: pandas, numpy, matplotlib, scikit-learn.
+- Random seed: a fixed random state (`42`) was used throughout for reproducibility.
 
-Built on the FlyRank ML Internship dataset. Data source: https://flyrank.ai
+**Run process:**
 
----
+1. Open notebooks in order.
+2. Run data loading and inspection steps.
+3. Define target and features, and run the leakage check.
+4. Run client-holdout split and train the baseline and Decision Tree model.
+5. Review evaluation results, feature importance chart, and exported recommendations.
 
-## Appendix: 5-Minute Demo Outline
+## Acknowledgments & data credit
 
-**1. Question** — Can content and search-performance signals be used to score which pages should be prioritized for refresh?
-
-**2. Method** — Worked through the full pipeline on FlyRank ML Internship search intelligence data: framed the problem, built a rule-based baseline (age + CTR), tested a decision tree against it, and caught a real data-leakage bug (`trend_pct`) before it could inflate results. Client-holdout evaluation followed.
-
-**3. One chart** — Decision tree feature importances, plus the baseline-vs-tree comparison table under client-holdout evaluation.
-
-**4. One honest result** — The leakage catch is a real result on its own: a feature derived from the outcome was found and removed before it could inflate accuracy, independent of the final number.
-
-**5. Recommendation** — Use the ranked output as a decision-support tool to flag which pages a human should review first — not as an automatic action queue.
-
-### Shareable Cuts
-
-**Social post**
-
-> During my FlyRank ML Internship, I built a page-prioritization model to help SEO teams decide which content to refresh first. I worked through the real pipeline: a rule-based baseline, a decision tree tested against it, and a data-leakage bug I caught and fixed before it skewed the results. Client-holdout validation is next. The leakage catch taught me more about doing ML honestly than a clean accuracy number would have. #MachineLearning #AI #DataScience
-
-**Employer-facing summary**
+Built on the FlyRank ML Internship dataset. Data source: [https://flyrank.ai](https://flyrank.ai)
 
 > I built a decision-tree model to prioritize pages for content refresh, benchmarked against a rule-based baseline using the same evaluation split. The project included a real feature-leakage check — one feature was dropped after I found it was derived from the outcome itself — and is set up for client-holdout validation, a stricter test than a standard train/test split. Final performance results are pending that evaluation; I'm not claiming an outcome I haven't verified yet.
